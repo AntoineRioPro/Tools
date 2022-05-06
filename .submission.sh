@@ -5,12 +5,14 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
+push=0
 message=""
 while [ $# -ne 0 ]; do
     case $1 in
         -h)
             echo "usage: submit [files]
 -h: help
+-u adds all the files that changed since last commit
 -cm msg: commit and add a message msg to tag or/and commit
 -t tag msg: adds a tag with tag to last commit
 -l: show the logs
@@ -24,13 +26,15 @@ while [ $# -ne 0 ]; do
                 exit 1
             fi
             message="$1"
+            shift
             echo $message
             git commit -m "$message"
             if [ $? -ne 0 ]; then
-                echo "submit: error in commit $1"
+                echo "submit: error in commit $message"
             else
-                echo "submit: commit with: $1"
+                echo "submit: commit with: $message"
             fi
+            push=1
             ;;
         -t)
             shift
@@ -50,10 +54,19 @@ while [ $# -ne 0 ]; do
             exit 0
             ;;
         -p)
-            git push --follow-tags
-                ;;
+            if [ $push -eq 0 ]; then
+                git push --tags
+            else
+                git push --follow-tags
+            fi
+            exit 0
+            ;;
+        -u)
+            shift
+            git add -u
+            ;;
         *)
-            if [ ! -f $1 ] && [ ! -d $1 ]; then
+            if [ ! -f $1 && ! -d $1 ]; then
                 echo "submit: $1 not found"
             else
                 git add $1 --ignore-errors
